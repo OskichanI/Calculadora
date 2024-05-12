@@ -1,0 +1,25 @@
+{
+  "name": "calculadora",
+  "version": "1.0.0",
+  "description": "calculadora",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OskichanI/Calculadora.git"
+  },
+  "author": "OskichanI (NepNep)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/OskichanI/Calculadora/issues"
+  },
+  "homepage": "https://github.com/OskichanI/Calculadora#readme",
+  "dependencies": {
+    "three": "^0.164.1",
+    "vite": "^5.2.11"
+  }
+}

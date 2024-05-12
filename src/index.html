@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculadora 3D</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      #container {
+        width: 100%;
+        height: 100vh;
+      }
+      #screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 20%;
+        background-color: #000;
+        color: #fff;
+        font-size: 24px;
+        text-align: right;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="screen"></div>
+    <div id="container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r164/three.min.js"></script>
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+      import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
+      import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
+
+      // Creamos la escena, la cámara y el renderizador
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xdddddd); // Puedes usar un valor hexadecimal o un nombre de color
+
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.getElementById("container").appendChild(renderer.domElement);
+
+      // Añadir OrbitContorls
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true; // Habilita el amortiguamiento para movimientos suaves
+      controls.dampingFactor = 0.25; // Factor de amortiguamiento (cuanto mayor, más suave)
+      controls.rotateSpeed = 0.35; // Velocidad de rotación al arrastrar el ratón
+      controls.zoomSpeed = 1.5; // Velocidad de zoom
+      controls.panSpeed = 0.5; // Velocidad de panorámica
+
+      // Creamos una geometría para los botones
+      const geometry = new THREE.BoxGeometry(1, 1, 0.2);
+      const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+
+      // Array para almacenar los botones y textos
+      const buttons = [];
+      const texts = [];
+
+      // Cargar una fuente
+      const fontLoader = new FontLoader();
+      fontLoader.load(
+        "https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/fonts/helvetiker_regular.typeface.json",
+        function (font) {
+          // Función para crear un botón y agregarlo a la escena
+          function createButton(value, position) {
+            const stringValue = value.toString();
+            const button = new THREE.Mesh(geometry, material);
+            button.position.set(position.x, position.y, position.z);
+            button.value = stringValue;
+            button.onClick = function () {
+              updateScreen(value);
+            };
+
+            buttons.push(button);
+            scene.add(button);
+
+            // Crear texto 3D sobre el botón
+            const textGeometry = new TextGeometry(stringValue, {
+              font: font,
+              size: 1,
+              height: 0.1,
+              curveSegments: 12,
+              bevelEnabled: false,
+            });
+            const textMaterial = new THREE.MeshBasicMaterial({
+              color: "black",
+            });
+            const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            textMesh.position.set(position.x, position.y, position.z);
+            // textMesh.position.y += 1;
+            texts.push(textMesh);
+            scene.add(textMesh);
+          }
+
+          // Crear los botones para los dígitos del 0 al 9
+          for (let i = 1; i <= 9; i++) {
+            const row = Math.floor((i - 1) / 3); // Calcular la fila actual
+            const col = (i - 1) % 3; // Calcular la columna actual
+            createButton(
+              i,
+              new THREE.Vector3((col - 1) * 2, (1 - row) * 2, -5)
+            );
+          }
+
+          // Crear los botones para los operadores
+          const operators = ["/", "*", "-", "+"];
+          for (let i = 0; i < operators.length; i++) {
+            let row = i; // Calcular la fila actual
+            let col = 4; // Calcular la columna actual
+            console.log(operators[i], row, col);
+            if (col === 2) {
+              // Si es el tercer elemento de la fila, ajustar la fila y la columna
+              row++;
+              col = -1;
+            }
+            createButton(
+              operators[i],
+              new THREE.Vector3(col, (1 - row) * 2, -5)
+            );
+            console.log(
+              operators[i],
+              new THREE.Vector3(col, (1 - row) * 2, -5)
+            );
+          }
+
+          // Crear el botón de igual
+          createButton("=", new THREE.Vector3(-2, -4, -5));
+          // Crear el botón 0
+          createButton("0", new THREE.Vector3(0, -4, -5));
+          // Crear el botón C
+          createButton("C", new THREE.Vector3(2, -4, -5));
+        }
+      );
+
+      // Pantalla para mostrar los números y operaciones
+      const screenDiv = document.getElementById("screen");
+
+      // Función para actualizar la pantalla
+      function updateScreen(value) {
+        if (value === "=" && !value.includes("Error")) {
+          try {
+            const result = eval(screenDiv.textContent);
+            screenDiv.textContent = result;
+          } catch (error) {
+            screenDiv.textContent = "Error";
+          }
+        } else {
+          screenDiv.textContent += value;
+        }
+        if (value === "C") {
+          screenDiv.textContent = "";
+        }
+      }
+
+      // Añadimos un listener de clics al lienzo
+      const raycaster = new THREE.Raycaster();
+      document
+        .getElementById("container")
+        .addEventListener("click", function (event) {
+          const mouse = new THREE.Vector2();
+          mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+          mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, camera);
+
+          const intersects = raycaster.intersectObjects(buttons);
+          if (intersects.length > 0 && intersects[0].object.onClick) {
+            intersects[0].object.onClick();
+          }
+        });
+
+      // Establecemos la posición de la cámara
+      camera.position.z = 10;
+
+      // Renderizamos la escena
+      function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+        controls.update(); // Actualizar OrbitControls
+      }
+      animate();
+    </script>
+  </body>
+</html>
